@@ -14,6 +14,7 @@
 package org.openmetadata.service.secrets;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
 import lombok.Getter;
 import org.openmetadata.schema.security.secrets.SecretsManagerConfiguration;
 import org.openmetadata.schema.security.secrets.SecretsManagerProvider;
@@ -29,7 +30,7 @@ public class SecretsManagerFactory {
       return secretsManager;
     }
     SecretsManagerProvider secretsManagerProvider =
-        config != null && config.getSecretsManager() != null ? config.getSecretsManager() : SecretsManagerProvider.NOOP;
+            config != null && config.getSecretsManager() != null ? config.getSecretsManager() : SecretsManagerProvider.NOOP;
     switch (secretsManagerProvider) {
       case NOOP:
       case AWS_SSM:
@@ -45,6 +46,14 @@ public class SecretsManagerFactory {
       case IN_MEMORY:
         secretsManager = InMemorySecretsManager.getInstance(clusterName);
         break;
+      case GOOGLE_SECRET_MANAGER:
+        try {
+          secretsManager = GoogleSecretsManager.getInstance(clusterName);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        break;
+
       default:
         throw new IllegalArgumentException("Not implemented secret manager store: " + secretsManagerProvider);
     }
